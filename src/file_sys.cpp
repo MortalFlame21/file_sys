@@ -16,24 +16,22 @@ fs::path rename_path(fs::path p) {
     return p;
 }
 
-void print(fs::path p, int level) {
-    std::string tabs(level, '\t');
-    std::cout << tabs << p.parent_path() << '\n';
+void print(fs::path p) {
+    std::cout << p << '\n';
     for (const auto& entry : fs::directory_iterator(p)) {
-        std::string tabs(level + 1, '\t');
-        std::cout << tabs << entry.path() << '\n';
+        std::cout << '\t'
+            << ((entry.is_directory()) ? entry.path() : entry.path().filename()) << '\n';
     }
 }
 
-void print_subdir(fs::path p) {
-    for (int i{}; const auto& entry : fs::directory_iterator(p)) {
-        if (entry.is_directory()) {
-            print(entry, i++);
-        }
-        else {
-            std::string tabs(i + 1, '\t');
-            std::cout << tabs << entry.path() << '\n';
-        }
+void print_subdir(fs::path p, int level) {
+    std::string sp(level, '\t');
+    std::cout << sp << ((level == 0) ? p : p.filename()) << '\n';
+    for (const auto& entry : fs::directory_iterator(p)) {
+        if (entry.is_directory())
+            print_subdir(entry.path(), level + 1);
+        else
+            std::cout << sp << '\t' << entry.path().filename() << '\n';
     }
 }
 } // namespace bb
