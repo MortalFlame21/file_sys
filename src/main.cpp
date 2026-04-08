@@ -6,6 +6,8 @@
 
 #include <cxxopts.hpp>
 
+#include "file_sys.h"
+
 namespace fs = std::filesystem;
 
 struct opts_t {
@@ -53,6 +55,9 @@ opts_t sanitise_parse(cxxopts::Options& opts, int argc, char* argv[]) {
     auto path{res["path"].as<fs::path>()};
     auto dest{res["dest"].as<fs::path>()};
 
+    validate_opt(std::cerr, !(copy || move) && !fs::is_directory(path),
+        "Error: path: path needs to be a directory to be printed.", EXIT_FAILURE);
+
     return {copy, move, print, subdir, path, dest};
 }
 
@@ -60,5 +65,16 @@ int main(int argc, char* argv[]) {
     cxxopts::Options opts("file_sys", "Copy, move, print out directories and files");
     auto o{sanitise_parse(opts, argc, argv)};
 
-    std::cout << o.path << '\n';
+    if (o.copy) {
+        bb::copy(o.path, o.dest); // will be empty if dest not in options. ok.
+    }
+    else if (o.move) {
+        bb::move(o.path, o.dest);
+    }
+    else if (o.subdir) {
+        bb::print_subdir(o.path);
+    }
+    else {
+        bb::print(o.path);
+    }
 }
