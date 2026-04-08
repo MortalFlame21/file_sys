@@ -13,6 +13,6 @@ set(CMAKE_CXX_STANDARD 20)
 
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
-add_executable(file_sys src/main.cpp)
+add_executable(file_sys src/main.cpp src/file_sys.cpp)
 
 target_link_libraries(file_sys PRIVATE cxxopts::cxxopts)
