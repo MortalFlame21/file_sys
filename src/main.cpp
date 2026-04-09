@@ -28,17 +28,18 @@ void validate_opt(std::ostream& o, bool b, std::string_view msg, int code) {
 
 opts_t sanitise_parse(cxxopts::Options& opts, int argc, char* argv[]) {
     opts.add_options()
-        ("c,cp,copy", "copy path")
+        ("c,cp,copy", "copy path to dest")
         ("m,mv,move", "move path to dest")
         ("p,print", "print path (one level)")
-        ("s,subdir", "print path and its subdirectories")
+        ("s,subdir", "print path and its subdirectories."
+            "with copy it performs recursive copy.")
         ("path", "", cxxopts::value<fs::path>())
-        ("dest", "", cxxopts::value<fs::path>()->default_value(""))
+        ("dest", "", cxxopts::value<fs::path>())
         ("h,help", "Print usage")
     ;
 
     opts.parse_positional({"path", "dest"});
-    opts.positional_help("[path] [dest?]");
+    opts.positional_help("[path] [dest]");
 
     auto res{opts.parse(argc, argv)};
 
@@ -55,8 +56,19 @@ opts_t sanitise_parse(cxxopts::Options& opts, int argc, char* argv[]) {
     auto path{res["path"].as<fs::path>()};
     auto dest{res["dest"].as<fs::path>()};
 
-    validate_opt(std::cerr, !(copy || move) && !fs::is_directory(path),
-        "Error: path: path needs to be a directory to be printed.", EXIT_FAILURE);
+    // copy invariants:
+    //      path != dest
+    // move invariants:
+    //      path != dest
+    // print invariants:
+    //      path is a directory
+    const auto cm{copy || move};
+    validate_opt(std::cerr, !cm && !fs::is_directory(path),
+        "Error: path: PATH needs to be a directory to be printed.", EXIT_FAILURE);
+    validate_opt(std::cerr, cm && !fs::exists(path),
+        "Error: path: PATH needs to exist.", EXIT_FAILURE);
+    validate_opt(std::cerr, cm && fs::exists(dest) && fs::equivalent(path, dest),
+        "Error: path: PATH and DEST are the same.", EXIT_FAILURE);
 
     return {copy, move, print, subdir, path, dest};
 }
@@ -65,8 +77,11 @@ int main(int argc, char* argv[]) {
     cxxopts::Options opts("file_sys", "Copy, move, print out directories and files");
     auto o{sanitise_parse(opts, argc, argv)};
 
-    if (o.copy) {
-        bb::copy(o.path, o.dest); // will be empty if dest not in options. ok.
+    if (o.copy && o.subdir) {
+        bb::copy(o.path, o.dest, fs::copy_options::recursive);
+    }
+    else if (o.copy) {
+        bb::copy(o.path, o.dest, fs::copy_options::none);
     }
     else if (o.move) {
         bb::move(o.path, o.dest);
