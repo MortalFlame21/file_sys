@@ -4,16 +4,12 @@
 #include "file_sys.h"
 
 namespace bb {
-void copy(fs::path src, fs::path dst) {
-    fs::copy(src, dst);
+void copy(fs::path src, fs::path dst, fs::copy_options o) {
+    fs::copy(src, dst, o);
 }
 
 void move(fs::path src, fs::path dst) {
     fs::rename(src, dst);
-}
-
-fs::path rename_path(fs::path p) {
-    return p;
 }
 
 void print(fs::path p) {
